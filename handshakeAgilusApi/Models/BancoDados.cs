@@ -16,7 +16,7 @@ namespace handshakeAgilusApi.Models
             else throw new Exception("Token inválido.");
         }
 
-        public void AtualizarFaseAf(string codigoContratoBanco, int? codigoFase)
+        public void AtualizarFaseAf(string codigoContratoBanco, int codigoFase)
         {
             SqlConnection conexao = new SqlConnection(ConnectionString);
 
@@ -44,9 +44,10 @@ namespace handshakeAgilusApi.Models
 
             using (conexao)
             {
+                conexao.Open();
                 try
                 {
-                    var dr = new SqlCommand("select faf_codigo, faf_descricao from fase_af where usr_mobile = 1", conexao).ExecuteReader();
+                    var dr = new SqlCommand("select faf_codigo, faf_descricao from fase_af where faf_ativa = 1 and usr_fase_mobile = 1", conexao).ExecuteReader();
                     while (dr.Read())
                     {
                         if (fases == null)
@@ -95,13 +96,24 @@ namespace handshakeAgilusApi.Models
         public List<Proposta> obterPropostasMobile(int? codigoFase)
         {
             SqlConnection conexao = new SqlConnection(ConnectionString);
+            string stringComando = String.Empty;
             List<Proposta> propostas = null;
             using (conexao)
             {
                 conexao.Open();
                 try
                 {
-                    var dr = new SqlCommand(String.Format("execute pr_dados_af_mobile"), conexao).ExecuteReader();
+                    SqlCommand cmd = null;
+
+                    if (codigoFase != null)
+                    {
+                        cmd = new SqlCommand("execute pr_dados_af_mobile @faf_codigo", conexao);
+                        cmd.Parameters.Add("@faf_codigo", SqlDbType.Int).Value = codigoFase;
+                    }
+                    else
+                        cmd = new SqlCommand("execute pr_dados_af_mobile @faf_codigo = null", conexao);
+
+                    var dr = cmd.ExecuteReader();
                     while (dr.Read())
                     {
                         if (propostas == null)
@@ -110,20 +122,20 @@ namespace handshakeAgilusApi.Models
                         }
                         propostas.Add(new Proposta()
                         {
-                            CodigoContrato = dr["af_codigo_contrato_banco"].ToString(),
-                            CPF = dr["con_cpf"].ToString(),
-                            Rg = dr["con_rg"].ToString(),
-                            Nome = dr["con_nome"].ToString(),
-                            DataNascimento = !String.IsNullOrEmpty(dr["con_data_nasc"].ToString()) ? ((DateTime)dr["con_data_nasc"]).ToString("dd/MM/yyyy") : String.Empty,
-                            Sexo = dr["con_sexo"].ToString(),
-                            Endereco = dr["con_endereco"].ToString(),
-                            Complemento = dr["con_complemento"].ToString(),
-                            Bairro = dr["con_bairro"].ToString(),
-                            Cidade = dr["con_cidade"].ToString(),
-                            Estado = dr["con_uf"].ToString(),
-                            Cep = dr["con_cep"].ToString(),
-                            CodigoConvenioAgilus = Convert.ToInt64(dr["orgav_codigo"]),
-                            ReferenciaEndereco = dr["con_referencia_endereco"].ToString(),
+                            CodigoContrato = dr["CodigoContrato"].ToString(),
+                            CPF = dr["CPF"].ToString(),
+                            Rg = dr["Rg"].ToString(),
+                            Nome = dr["Nome"].ToString(),
+                            DataNascimento = !String.IsNullOrEmpty(dr["DataNascimento"].ToString()) ? ((DateTime)dr["DataNascimento"]).ToString("dd/MM/yyyy") : String.Empty,
+                            Sexo = dr["Sexo"].ToString(),
+                            Endereco = dr["Endereco"].ToString(),
+                            Complemento = dr["Complemento"].ToString(),
+                            Bairro = dr["Bairro"].ToString(),
+                            Cidade = dr["Cidade"].ToString(),
+                            Estado = dr["Estado"].ToString(),
+                            Cep = dr["Cep"].ToString(),
+                            CodigoConvenioAgilus = Convert.ToInt64(dr["CodigoConvenioAgilus"]),
+                            ReferenciaEndereco = dr["ReferenciaEndereco"].ToString(),
                         });
                     }
                     dr.NextResult();
